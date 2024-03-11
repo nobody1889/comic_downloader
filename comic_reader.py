@@ -1,13 +1,12 @@
 import os
-import aiohttp
-import requests
 from bs4 import BeautifulSoup
 import asyncio
 import sys
+import httpx
 
 
 def get_url(url):  # get url and check the status if True return response
-    response = requests.get(url)
+    response = httpx.get(url)
     if response.status_code == 200:
         return response
     else:
@@ -30,12 +29,6 @@ class Founder(object):  # a class for get html and work with urls of tags
     def search_html(self, tage=None):  # look for some stuff in html
 
         soup = BeautifulSoup(self.response.content, "html.parser")
-        try:
-            filename = soup.select_one("title")
-        except AttributeError:
-            print('no title found')
-            filename = soup.select_one("title")
-        self.final_destination = f'{filename}'
         self.downloads_space = soup.select(tage)
 
     def get_link(self) -> list[str]:  # this function make us be able to work with  urls more
@@ -68,25 +61,29 @@ class Downloader(object):
             sys.exit()
 
     async def download_images(self, url: str, num: int) -> None:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                try:  # for when one of pictures not working
-                    assert response.status == 200
-                except AssertionError:
-                    print(f'status : {response.status}')
-                    if 'y' in input('Do you want to download continue ? [Y/n] ').lower():   # if client let the presses continue
-                        pass
-                    else:  # else exit
-                        sys.exit('Exiting')
-                t = await response.read()
-                self.save(t, num)
+        async with httpx.AsyncClient() as session:
+            try:  # for when one of pictures not working
+                response = await session.get(url, timeout=10)
+                assert response.status_code == 200
+            except AssertionError:
+                print(f'status : {response.status_code}')
+                if 'y' in input(
+                        'Do you want to download continue ? [Y/n] ').lower():  # if client let the presses continue
+                    pass
+                else:  # else exit
+                    sys.exit('Exiting')
+            content = response.content
+            self.save(content, num)
 
     async def download(self) -> None:
         tasks = [self.download_images(image, num) for num, image in enumerate(self.mylist)]
         await asyncio.gather(*tasks)
 
     def run(self) -> None:  # run the program
-        asyncio.run(self.download())
+        try:
+            asyncio.run(self.download())
+        except KeyboardInterrupt:
+            print('Exiting')
 
 
 if __name__ == '__main__':

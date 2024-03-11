@@ -1,21 +1,27 @@
-from comic_reader import Founder, Downloader
+from comic_reader import (Founder, Downloader)
+import time
 
 
-def read_manga():
-    url = input("Enter the URL you want to download: \n")
+def read_manga(url):
     app = Founder(url)
     app.search_html(tage="img")
     links = app.get_link()
     return links
 
 
-def download_manga(thelist):
-    path = input("Enter the name of file : \n")
+def download_manga(the_list, file_name):
+    start = time.time()
     app = Downloader()
-    app.set(images=thelist, save_as=path)
+    app.set(images=the_list, save_as=file_name)
     app.run()
+    print("Time taken : ", time.time() - start)
 
 
 if __name__ == "__main__":
-    images = read_manga()
-    download_manga(images)
+    urls = input("Enter the URLs you want to download: \n").split(' ')
+    for url in urls:
+        name = input("Enter the name of file : \n")
+        images = read_manga(url)
+        download_manga(images, file_name=name)
+
+
