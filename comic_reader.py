@@ -72,6 +72,8 @@ class Downloader(object):
                     pass
                 else:  # else exit
                     sys.exit('Exiting')
+            except httpx.TimeoutException:
+                print('Timeout', url)
             content = response.content
             self.save(content, num)
 
